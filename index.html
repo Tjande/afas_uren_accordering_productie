@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OutSite - Uren Accorderen</title>
+  <style>
+    :root {
+      --afas-blue: #00509d;
+      --afas-light-blue: #e8f1f9;
+      --bg-gray: #f8fafc;
+      --border-color: #e2e8f0;
+      --text-dark: #1e293b;
+      --text-muted: #64748b;
+      --orange: #e8890c;
+      --orange-dark: #cc7a0a;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-gray);
+      color: var(--text-dark);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--afas-light-blue);
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+    }
+
+    .header h2 {
+      margin: 0;
+      color: var(--afas-blue);
+      font-size: 20px;
+    }
+
+    /* Maandfilter */
+    .filter-bar {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: var(--afas-light-blue);
+      padding: 10px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    .filter-bar label {
+      font-weight: bold;
+      color: var(--afas-blue);
+    }
+
+    .filter-bar input[type="month"],
+    .filter-bar select {
+      padding: 6px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text-dark);
+    }
+
+    /* Toolbar: entries + search */
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .toolbar select,
+    .toolbar input[type="text"] {
+      padding: 6px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    td.wrap-cell {
+      white-space: normal;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 600;
+      user-select: none;
+    }
+
+    th.sortable {
+      cursor: pointer;
+    }
+
+    th.sortable:hover {
+      background: #e8edf3;
+    }
+
+    .sort-arrows {
+      display: inline-flex;
+      flex-direction: column;
+      margin-left: 4px;
+      vertical-align: middle;
+      font-size: 8px;
+      line-height: 8px;
+      color: #b6c0cc;
+    }
+
+    .sort-arrows span.active {
+      color: var(--afas-blue);
+    }
+
+    th.col-check, td.col-check {
+      width: 190px;
+      text-align: left;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .approve-reject-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .approve-reject-row label {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+    }
+
+    .reject-reason {
+      width: 100%;
+      margin-top: 4px;
+      padding: 2px 4px;
+      font-size: 12px;
+      box-sizing: border-box;
+    }
+
+    tbody tr:hover {
+      background: #fafbfc;
+    }
+
+    tbody tr.no-results td {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 24px;
+    }
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    /* Footer: entries info + pagination */
+    .table-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .pagination {
+      display: flex;
+      gap: 4px;
+    }
+
+    .pagination button {
+      min-width: 32px;
+      height: 32px;
+      border: 1px solid var(--border-color);
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-dark);
+    }
+
+    .pagination button:hover:not(:disabled):not(.active) {
+      background: var(--afas-light-blue);
+    }
+
+    .pagination button.active {
+      background: var(--orange);
+      border-color: var(--orange);
+      color: white;
+      font-weight: 600;
+    }
+
+    .pagination button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .pagination span.ellipsis {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      color: var(--text-muted);
+    }
+
+    .btn-verzenden {
+      margin-top: 20px;
+      background: var(--orange);
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    .btn-verzenden:hover:not(:disabled) {
+      background: var(--orange-dark);
+    }
+
+    .btn-verzenden:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    /* Eigen meldingen i.p.v. browser alert()/confirm() */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.visible {
+      display: flex;
+    }
+    .modal-box {
+      background: #ffffff;
+      border-radius: 10px;
+      max-width: 420px;
+      width: 90%;
+      padding: 24px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+    }
+    .modal-box p {
+      margin: 0 0 20px 0;
+      color: var(--text-dark);
+      line-height: 1.5;
+      white-space: pre-line;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .modal-actions button {
+      padding: 8px 18px;
+      border-radius: 6px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .modal-btn-primary {
+      background: var(--afas-blue);
+      color: #fff;
+    }
+    .modal-btn-primary:hover {
+      background: #003d7a;
+    }
+    .modal-btn-secondary {
+      background: #e2e8f0;
+      color: var(--text-dark);
+    }
+    .modal-btn-secondary:hover {
+      background: #cbd5e1;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1e293b;
+      color: #fff;
+      padding: 14px 22px;
+      border-radius: 8px;
+      font-size: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      z-index: 1100;
+      opacity: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+      max-width: 90%;
+      text-align: center;
+      white-space: pre-line;
+    }
+    .toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .toast.toast-success {
+      background: #15803d;
+    }
+    .toast.toast-error {
+      background: #b91c1c;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h2>&#9998; Uren accorderen &amp; gereed melden</h2>
+  </div>
+
+  <!-- Getoond wanneer deze debiteur geen externe goedkeuring mag doen -->
+  <div id="accessDenied" style="display:none; padding: 24px; text-align: center; color: #64748b;"></div>
+
+  <div id="mainContent">
+
+  <!-- Maand- en weekfilter -->
+  <div class="filter-bar">
+    <label for="monthPicker">Selecteer Periode (Maand):</label>
+    <input type="month" id="monthPicker" onchange="onMonthFilterChange()">
+
+    <span id="weekFilterWrap">
+      <label for="weekFilter">Week:</label>
+      <select id="weekFilter" onchange="onWeekFilterChange()">
+        <option value="">Alle weken</option>
+      </select>
+    </span>
+  </div>
+
+
+  <!-- Search -->
+  <div class="toolbar">
+    <div class="toolbar-left"></div>
+    <div class="toolbar-right">
+      Search:
+      <input type="text" id="searchInput" oninput="onSearchInput()" placeholder="">
+    </div>
+  </div>
+
+  <!-- Urentabel -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-check"><input type="checkbox" id="selectAllCheckbox" onchange="onSelectAllChange()" title="Alles goedkeuren"></th>
+          <th class="sortable" data-col="date" onclick="onSortClick('date')">Datum<span class="sort-arrows" data-col="date"><span data-dir="asc">&#9650;</span><span data-dir="desc">&#9660;</span></span></th>
+          <th class="sortable" data-col="employeeName" onclick="onSortClick('employeeName')">Medewerker<span class="sort-arrows" data-col="employeeName"><span data-dir="asc">&#9650;</span><span data-dir="desc">&#9660;</span></span></th>
+          <th class="sortable" data-col="project" onclick="onSortClick('project')">Project<span class="sort-arrows" data-col="project"><span data-dir="asc">&#9650;</span><span data-dir="desc">&#9660;</span></span></th>
+          <th class="sortable" data-col="workType" onclick="onSortClick('workType')">Werksoort<span class="sort-arrows" data-col="workType"><span data-dir="asc">&#9650;</span><span data-dir="desc">&#9660;</span></span></th>
+          <th class="sortable" data-col="description" onclick="onSortClick('description')">Omschrijving<span class="sort-arrows" data-col="description"><span data-dir="asc">&#9650;</span><span data-dir="desc">&#9660;</span></span></th>
+          <th class="sortable" data-col="hours" onclick="onSortClick('hours')">Aantal<span class="sort-arrows" data-col="hours"><span data-dir="asc">&#9650;</span><span data-dir="desc">&#9660;</span></span></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr class="no-results"><td colspan="7">Uren laden...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Footer: info + paginering -->
+  <div class="table-footer">
+    <span id="entriesInfo">Showing 0 to 0 of 0 entries</span>
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <button class="btn-verzenden" id="verzendBtn" onclick="verzendGeaccordeerd()" disabled>Verzenden</button>
+
+  </div><!-- /mainContent -->
+</div>
+
+<script>
+  // VERVANG DEZE URL'S MET JOUW EIGEN N8N WEBHOOK URL'S
+  const N8N_VERIFY_URL = "https://dpprconsultancy.app.n8n.cloud/webhook/1c8aa13b-f8cd-48a7-8b63-f2ea5d51fcc1";
+  const N8N_POST_URL = "https://dpprconsultancy.app.n8n.cloud/webhook/5bea6f18-e2f5-4851-b835-3b02a4e02812";
+  // Moet exact overeenkomen met de "Value" van de 'Webhook API Key'-credential in n8n
+  const N8N_API_KEY = "sk_outsite_7f3a9c2e1b8d4f6a0e5c9b2d7a1f4e8c";
+
+  // --- Eigen meldingen, i.p.v. de kale browser alert()/confirm() ---
+  let toastTimer = null;
+  function showToast(message, type) {
+    const el = document.getElementById("toast");
+    el.textContent = message;
+    el.className = "toast visible" + (type ? ` toast-${type}` : "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      el.classList.remove("visible");
+    }, 4000);
+  }
+
+  function showConfirm(message) {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById("confirmOverlay");
+      document.getElementById("confirmMessage").textContent = message;
+      overlay.classList.add("visible");
+
+      const okBtn = document.getElementById("confirmOkBtn");
+      const cancelBtn = document.getElementById("confirmCancelBtn");
+
+      function cleanup(result) {
+        overlay.classList.remove("visible");
+        okBtn.removeEventListener("click", onOk);
+        cancelBtn.removeEventListener("click", onCancel);
+        resolve(result);
+      }
+      function onOk() { cleanup(true); }
+      function onCancel() { cleanup(false); }
+
+      okBtn.addEventListener("click", onOk);
+      cancelBtn.addEventListener("click", onCancel);
+    });
+  }
+
+  let allRows = [];        // platte lijst van alle open urenregels (over alle medewerkers)
+  let rowActions = {};     // ruleId -> { action: 'approve'|'reject'|null, reason: '' }
+  let sessionToken = null; // sessietoken van n8n, nodig bij het accorderen
+  let frequency = 'maand'; // 'week' of 'maand', bepaalt welke filter zichtbaar is
+  let searchTerm = "";
+  let selectedWeek = "";   // ISO week-key, bv. "2015-W49", leeg = alle weken
+  let selectedMonth = "";  // "YYYY-MM", client-side filter (geen nieuwe serveraanroep)
+  let sortColumn = "date";
+  let sortDir = "asc";
+  let pageSize = 10;
+  let currentPage = 1;
+
+  // Parameters die AFAS OutSite automatisch aan de iframe-URL toevoegt.
+  // Als deze aanwezig zijn, gebruiken we de geverifieerde AFAS-sessie i.p.v.
+  // een los (en dus vervalsbaar) debiteurnummer.
+  const afasParams = new URLSearchParams(window.location.search);
+  const afasSession = {
+    tokenurl: afasParams.get('tokenurl'),
+    code: afasParams.get('code'),
+    publickey: afasParams.get('publickey'),
+    sessionid: afasParams.get('sessionid')
+  };
+  const isAfasSession = !!(afasSession.tokenurl && afasSession.code && afasSession.publickey && afasSession.sessionid);
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Standaard de vorige maand tonen (uren worden doorgaans een maand later verloond).
+    const today = new Date();
+    const prevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const defaultMonth = prevMonth.toISOString().substring(0, 7); // YYYY-MM
+    document.getElementById("monthPicker").value = defaultMonth;
+    selectedMonth = defaultMonth;
+
+    loadHours();
+  });
+
+  async function loadHours() {
+    if (!isAfasSession) {
+      // Deze pagina is niet vanuit AFAS OutSite geopend (geen sessieparameters aanwezig).
+      document.getElementById("mainContent").style.display = "none";
+      const denied = document.getElementById("accessDenied");
+      denied.style.display = "block";
+      denied.innerText = "Deze pagina moet via AFAS OutSite geopend worden.";
+      return;
+    }
+
+    document.getElementById("tableBody").innerHTML = `<tr class="no-results"><td colspan="7">Uren ophalen...</td></tr>`;
+
+    try {
+      // Veilige flow: n8n verifieert bij AFAS zelf wie is ingelogd.
+      // Haalt in \u00e9\u00e9n keer ALLE openstaande regels op; de maand/week-keuze
+      // filtert daarna alleen nog lokaal in de browser (zie onMonthFilterChange).
+      const params = new URLSearchParams({ ...afasSession });
+      const response = await fetch(`${N8N_VERIFY_URL}?${params.toString()}`, {
+        headers: { "X-Api-Key": N8N_API_KEY }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Serverfout (${response.status})`);
+      }
+      const data = await response.json();
+
+      const access = data.access !== false;
+      const employeesData = data.employees || [];
+
+      if (!access) {
+        document.getElementById("mainContent").style.display = "none";
+        const denied = document.getElementById("accessDenied");
+        denied.style.display = "block";
+        denied.innerText = data.message || "Goedkeuring is niet beschikbaar voor uw organisatie.";
+        return;
+      }
+
+      document.getElementById("mainContent").style.display = "";
+      document.getElementById("accessDenied").style.display = "none";
+
+      frequency = data.frequency || 'maand';
+      sessionToken = data.sessionToken || null;
+      document.getElementById("weekFilterWrap").style.display = (frequency === 'maand') ? 'none' : '';
+      if (frequency === 'maand') {
+        selectedWeek = "";
+      }
+
+      allRows = [];
+      employeesData.forEach(emp => {
+        (emp.rules || []).forEach(rule => {
+          allRows.push({
+            ruleId: rule.ruleId,
+            date: rule.date || ((rule.year && rule.period) ? `${String(rule.period).padStart(2, '0')}-${rule.year}` : ''),
+            dateRaw: rule.dateRaw || '',
+            employeeName: emp.employeeName,
+            employeeId: emp.employeeId,
+            project: rule.project,
+            workType: rule.itemCode || '',
+            description: rule.description,
+            hours: rule.hours
+          });
+        });
+      });
+
+      rowActions = {};
+      currentPage = 1;
+      populateWeekFilter();
+      renderAll();
+    } catch (err) {
+      console.error(err);
+      document.getElementById("tableBody").innerHTML = `<tr class="no-results"><td colspan="7" style="color:red;">Fout bij het laden van uren.</td></tr>`;
+    }
+  }
+
+  function parseDateValue(value) {
+    if (!value) return 0;
+    // probeer DD-MM-YYYY
+    const dmy = /^(\d{2})-(\d{2})-(\d{4})$/.exec(value);
+    if (dmy) return new Date(`${dmy[3]}-${dmy[2]}-${dmy[1]}`).getTime();
+    const t = new Date(value).getTime();
+    return isNaN(t) ? 0 : t;
+  }
+
+  function parseHoursValue(value) {
+    return parseFloat(String(value).replace(',', '.')) || 0;
+  }
+
+  // ISO-8601 weeknummer: week bevat de donderdag van die week
+  function getISOWeekInfo(dateStr) {
+    const t = parseDateValue(dateStr);
+    if (!t) return null;
+    const d = new Date(t);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+    const week1 = new Date(d.getFullYear(), 0, 4);
+    const weekNo = 1 + Math.round(((d - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+    return { year: d.getFullYear(), week: weekNo, key: `${d.getFullYear()}-W${String(weekNo).padStart(2, '0')}` };
+  }
+
+  function populateWeekFilter() {
+    const weekSelect = document.getElementById("weekFilter");
+    const weeksMap = new Map();
+    allRows.filter(rowMatchesSelectedMonth).forEach(row => {
+      const info = getISOWeekInfo(row.date);
+      if (info) weeksMap.set(info.key, info);
+    });
+    const weeks = Array.from(weeksMap.values()).sort((a, b) => a.key.localeCompare(b.key));
+
+    selectedWeek = "";
+    weekSelect.innerHTML = '<option value="">Alle weken</option>' +
+      weeks.map(w => `<option value="${w.key}">Week ${w.week} (${w.year})</option>`).join('');
+    weekSelect.value = "";
+  }
+
+  function onMonthFilterChange() {
+    selectedMonth = document.getElementById("monthPicker").value;
+    selectedWeek = "";
+    currentPage = 1;
+    populateWeekFilter();
+    renderAll();
+  }
+
+  function onWeekFilterChange() {
+    selectedWeek = document.getElementById("weekFilter").value;
+    currentPage = 1;
+    renderAll();
+  }
+
+  function rowMatchesSelectedMonth(row) {
+    if (!selectedMonth || !row.dateRaw) return true;
+    return row.dateRaw.substring(0, 7) === selectedMonth;
+  }
+
+  function getFilteredSortedRows() {
+    const term = searchTerm.trim().toLowerCase();
+    let rows = allRows.filter(rowMatchesSelectedMonth);
+
+    if (selectedWeek) {
+      rows = rows.filter(row => {
+        const info = getISOWeekInfo(row.date);
+        return info && info.key === selectedWeek;
+      });
+    }
+
+    if (term) {
+      rows = rows.filter(row => {
+        const haystack = [row.date, row.employeeName, row.project, row.workType, row.description, row.hours]
+          .join(' ').toLowerCase();
+        return haystack.includes(term);
+      });
+    }
+
+    rows = rows.slice().sort((a, b) => {
+      let av, bv;
+      if (sortColumn === 'date') {
+        av = parseDateValue(a.date); bv = parseDateValue(b.date);
+      } else if (sortColumn === 'hours') {
+        av = parseHoursValue(a.hours); bv = parseHoursValue(b.hours);
+      } else {
+        av = String(a[sortColumn] || '').toLowerCase();
+        bv = String(b[sortColumn] || '').toLowerCase();
+      }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return rows;
+  }
+
+  function renderAll() {
+    const filtered = getFilteredSortedRows();
+    const totalEntries = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const start = (currentPage - 1) * pageSize;
+    const pageRows = filtered.slice(start, start + pageSize);
+
+    renderTableBody(pageRows);
+    renderEntriesInfo(totalEntries, start, pageRows.length);
+    renderPagination(totalPages);
+    renderSortIndicators();
+    syncSelectAllState(pageRows);
+    updateVerzendButton();
+  }
+
+  function renderTableBody(pageRows) {
+    const tbody = document.getElementById("tableBody");
+
+    if (pageRows.length === 0) {
+      if (allRows.length === 0) {
+        tbody.innerHTML = `<tr class="no-results"><td colspan="7">Je bent helemaal bij. Er zijn geen uren om te accorderen.</td></tr>`;
+      } else {
+        tbody.innerHTML = `<tr class="no-results"><td colspan="7">Geen urenregels gevonden.</td></tr>`;
+      }
+      return;
+    }
+
+    tbody.innerHTML = pageRows.map(row => {
+      const state = rowActions[row.ruleId] || { action: null, reason: '' };
+      const reasonBox = state.action === 'reject'
+        ? `<br><input type="text" class="reject-reason" placeholder="Toelichting (optioneel)" value="${(state.reason || '').replace(/"/g, '&quot;')}" oninput="onReasonChange('${row.ruleId}', this.value)">`
+        : '';
+      return `
+      <tr>
+        <td class="col-check">
+          <div class="approve-reject-row">
+            <label><input type="checkbox" ${state.action === 'approve' ? 'checked' : ''} onchange="onRowCheckChange('${row.ruleId}', 'approve', this.checked)"> Akkoord</label>
+            <label><input type="checkbox" ${state.action === 'reject' ? 'checked' : ''} onchange="onRowCheckChange('${row.ruleId}', 'reject', this.checked)"> Afkeuren</label>
+          </div>
+          ${reasonBox}
+        </td>
+        <td>${row.date}</td>
+        <td>${row.employeeName}</td>
+        <td>${row.project}</td>
+        <td>${row.workType}</td>
+        <td class="wrap-cell">${row.description}</td>
+        <td>${row.hours}</td>
+      </tr>
+    `;
+    }).join('');
+  }
+
+  function renderEntriesInfo(totalEntries, start, pageCount) {
+    const info = document.getElementById("entriesInfo");
+    if (totalEntries === 0) {
+      info.innerText = "Showing 0 to 0 of 0 entries";
+      return;
+    }
+    info.innerText = `Showing ${start + 1} to ${start + pageCount} of ${totalEntries} entries`;
+  }
+
+  function renderPagination(totalPages) {
+    const pagination = document.getElementById("pagination");
+    let html = `<button ${currentPage === 1 ? 'disabled' : ''} onclick="goToPage(${currentPage - 1})">Previous</button>`;
+
+    const pages = getPageWindow(currentPage, totalPages);
+    pages.forEach(p => {
+      if (p === '...') {
+        html += `<span class="ellipsis">&hellip;</span>`;
+      } else {
+        html += `<button class="${p === currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+      }
+    });
+
+    html += `<button ${currentPage === totalPages ? 'disabled' : ''} onclick="goToPage(${currentPage + 1})">Next</button>`;
+    pagination.innerHTML = html;
+  }
+
+  function getPageWindow(current, total) {
+    const delta = 1;
+    const range = [];
+    for (let i = Math.max(1, current - delta); i <= Math.min(total, current + delta); i++) {
+      range.push(i);
+    }
+    if (range[0] > 1) {
+      if (range[0] > 2) range.unshift('...');
+      range.unshift(1);
+    }
+    if (range[range.length - 1] < total) {
+      if (range[range.length - 1] < total - 1) range.push('...');
+      range.push(total);
+    }
+    return range;
+  }
+
+  function renderSortIndicators() {
+    document.querySelectorAll('.sort-arrows').forEach(el => {
+      const col = el.getAttribute('data-col');
+      el.querySelectorAll('span').forEach(arrow => {
+        const dir = arrow.getAttribute('data-dir');
+        arrow.classList.toggle('active', col === sortColumn && dir === sortDir);
+      });
+    });
+  }
+
+  function syncSelectAllState(pageRows) {
+    const selectAll = document.getElementById("selectAllCheckbox");
+    if (pageRows.length === 0) {
+      selectAll.checked = false;
+      selectAll.indeterminate = false;
+      return;
+    }
+    const approvedCount = pageRows.filter(r => rowActions[r.ruleId] && rowActions[r.ruleId].action === 'approve').length;
+    selectAll.checked = approvedCount === pageRows.length;
+    selectAll.indeterminate = approvedCount > 0 && approvedCount < pageRows.length;
+  }
+
+  function countChosen() {
+    return Object.values(rowActions).filter(a => a && a.action).length;
+  }
+
+  function updateVerzendButton() {
+    const btn = document.getElementById("verzendBtn");
+    const count = countChosen();
+    btn.disabled = count === 0;
+    btn.innerText = count > 0 ? `Verzenden (${count})` : 'Verzenden';
+  }
+
+  function onSortClick(col) {
+    if (sortColumn === col) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortColumn = col;
+      sortDir = 'asc';
+    }
+    currentPage = 1;
+    renderAll();
+  }
+
+  function onSearchInput() {
+    searchTerm = document.getElementById("searchInput").value;
+    currentPage = 1;
+    renderAll();
+  }
+
+  function goToPage(page) {
+    currentPage = page;
+    renderAll();
+  }
+
+  function onRowCheckChange(ruleId, type, checked) {
+    if (!rowActions[ruleId]) rowActions[ruleId] = { action: null, reason: '' };
+    if (checked) {
+      rowActions[ruleId].action = type; // 'approve' en 'afkeuren' sluiten elkaar uit
+    } else if (rowActions[ruleId].action === type) {
+      rowActions[ruleId].action = null;
+    }
+    const filtered = getFilteredSortedRows();
+    const start = (currentPage - 1) * pageSize;
+    renderTableBody(filtered.slice(start, start + pageSize));
+    syncSelectAllState(filtered.slice(start, start + pageSize));
+    updateVerzendButton();
+  }
+
+  function onReasonChange(ruleId, value) {
+    if (!rowActions[ruleId]) rowActions[ruleId] = { action: 'reject', reason: '' };
+    rowActions[ruleId].reason = value;
+  }
+
+  function onSelectAllChange() {
+    const selectAll = document.getElementById("selectAllCheckbox");
+    const filtered = getFilteredSortedRows();
+    const start = (currentPage - 1) * pageSize;
+    const pageRows = filtered.slice(start, start + pageSize);
+
+    pageRows.forEach(row => {
+      if (selectAll.checked) {
+        rowActions[row.ruleId] = { action: 'approve', reason: '' };
+      } else if (rowActions[row.ruleId] && rowActions[row.ruleId].action === 'approve') {
+        rowActions[row.ruleId].action = null;
+      }
+    });
+
+    renderTableBody(pageRows);
+    updateVerzendButton();
+  }
+
+  async function verzendGeaccordeerd() {
+    const chosen = allRows.filter(r => rowActions[r.ruleId] && rowActions[r.ruleId].action);
+    if (chosen.length === 0) return;
+
+    const openZonderKeuze = allRows.length - chosen.length;
+    if (openZonderKeuze > 0) {
+      const doorgaan = await showConfirm(`${openZonderKeuze} regel(s) zijn niet aangevinkt en blijven open. Wil je doorgaan met alleen de ${chosen.length} aangevinkte regel(s)?`);
+      if (!doorgaan) return;
+    } else {
+      const doorgaan = await showConfirm(`Weet je zeker dat je ${chosen.length} urenregel(s) wilt verwerken?`);
+      if (!doorgaan) return;
+    }
+
+    if (!sessionToken) {
+      showToast('Geen geldig sessietoken \u2014 herlaad de pagina en probeer opnieuw.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById("verzendBtn");
+    btn.disabled = true;
+    btn.innerText = "Bezig met verzenden...";
+
+    const items = chosen.map(row => {
+      const state = rowActions[row.ruleId];
+      const item = {
+        ruleId: row.ruleId,
+        action: state.action,
+        dateRaw: row.dateRaw,
+        itemCode: row.workType,
+        employeeName: row.employeeName,
+        date: row.date
+      };
+      if (state.action === 'reject' && state.reason) {
+        item.reason = state.reason;
+      }
+      return item;
+    });
+
+    try {
+      const res = await fetch(N8N_POST_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Api-Key": N8N_API_KEY
+        },
+        body: JSON.stringify({ sessionToken, items })
+      });
+      const data = await res.json().catch(() => null);
+
+      if (data && typeof data.message === 'string') {
+        showToast(data.message, (data.success === false || data.failed > 0) ? 'error' : 'success');
+      } else if (res.ok) {
+        showToast('Verwerkt.', 'success');
+      } else {
+        showToast('Er ging iets mis bij het verwerken, probeer het opnieuw.', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('Er ging iets mis bij het verwerken, probeer het opnieuw.', 'error');
+    }
+
+    // Let op: we laden de uren hier bewust NIET automatisch opnieuw \u2014 de
+    // eenmalige AFAS-code van deze paginasessie is dan al verbruikt, dus een
+    // nieuwe aanroep zou altijd mislukken. Ververs de pagina handmatig (in
+    // OutSite, zodat er een verse code komt) om de actuele status te zien.
+    rowActions = {};
+    renderAll();
+    btn.innerText = "Verzenden";
+    updateVerzendButton();
+  }
+</script>
+
+<!-- Eigen bevestigingsvenster i.p.v. browser confirm() -->
+<div class="modal-overlay" id="confirmOverlay">
+  <div class="modal-box">
+    <p id="confirmMessage"></p>
+    <div class="modal-actions">
+      <button class="modal-btn-secondary" id="confirmCancelBtn">Annuleren</button>
+      <button class="modal-btn-primary" id="confirmOkBtn">Doorgaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Eigen melding i.p.v. browser alert() -->
+<div class="toast" id="toast"></div>
+
+</body>
+</html>
