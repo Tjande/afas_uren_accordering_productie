@@ -486,7 +486,9 @@
     // Standaard de vorige maand tonen (uren worden doorgaans een maand later verloond).
     const today = new Date();
     const prevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const defaultMonth = prevMonth.toISOString().substring(0, 7); // YYYY-MM
+    // Lokale datumdelen gebruiken, niet toISOString(): dat rekent om naar UTC en
+    // geeft in Nederland per ongeluk twee maanden terug i.p.v. \u00e9\u00e9n.
+    const defaultMonth = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
     document.getElementById("monthPicker").value = defaultMonth;
     selectedMonth = defaultMonth;
 
