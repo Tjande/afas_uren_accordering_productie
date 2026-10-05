@@ -394,13 +394,11 @@
           <th class="sortable" data-col="date" onclick="onSortClick('date')">Datum<span class="sort-arrows" data-col="date"><span data-dir="asc">&#9650;</span><span data-dir="desc">&#9660;</span></span></th>
           <th class="sortable" data-col="employeeName" onclick="onSortClick('employeeName')">Medewerker<span class="sort-arrows" data-col="employeeName"><span data-dir="asc">&#9650;</span><span data-dir="desc">&#9660;</span></span></th>
           <th class="sortable" data-col="project" onclick="onSortClick('project')">Project<span class="sort-arrows" data-col="project"><span data-dir="asc">&#9650;</span><span data-dir="desc">&#9660;</span></span></th>
-          <th class="sortable" data-col="workType" onclick="onSortClick('workType')">Werksoort<span class="sort-arrows" data-col="workType"><span data-dir="asc">&#9650;</span><span data-dir="desc">&#9660;</span></span></th>
-          <th class="sortable" data-col="description" onclick="onSortClick('description')">Omschrijving<span class="sort-arrows" data-col="description"><span data-dir="asc">&#9650;</span><span data-dir="desc">&#9660;</span></span></th>
           <th class="sortable" data-col="hours" onclick="onSortClick('hours')">Aantal<span class="sort-arrows" data-col="hours"><span data-dir="asc">&#9650;</span><span data-dir="desc">&#9660;</span></span></th>
         </tr>
       </thead>
       <tbody id="tableBody">
-        <tr class="no-results"><td colspan="7">Uren laden...</td></tr>
+        <tr class="no-results"><td colspan="5">Uren laden...</td></tr>
       </tbody>
     </table>
   </div>
@@ -505,7 +503,7 @@
       return;
     }
 
-    document.getElementById("tableBody").innerHTML = `<tr class="no-results"><td colspan="7">Uren ophalen...</td></tr>`;
+    document.getElementById("tableBody").innerHTML = `<tr class="no-results"><td colspan="5">Uren ophalen...</td></tr>`;
 
     try {
       // Veilige flow: n8n verifieert bij AFAS zelf wie is ingelogd.
@@ -565,7 +563,7 @@
       renderAll();
     } catch (err) {
       console.error(err);
-      document.getElementById("tableBody").innerHTML = `<tr class="no-results"><td colspan="7" style="color:red;">Fout bij het laden van uren.</td></tr>`;
+      document.getElementById("tableBody").innerHTML = `<tr class="no-results"><td colspan="5" style="color:red;">Fout bij het laden van uren.</td></tr>`;
     }
   }
 
@@ -641,7 +639,7 @@
 
     if (term) {
       rows = rows.filter(row => {
-        const haystack = [row.date, row.employeeName, row.project, row.workType, row.description, row.hours]
+        const haystack = [row.date, row.employeeName, row.project, row.hours]
           .join(' ').toLowerCase();
         return haystack.includes(term);
       });
@@ -688,9 +686,9 @@
 
     if (pageRows.length === 0) {
       if (allRows.length === 0) {
-        tbody.innerHTML = `<tr class="no-results"><td colspan="7">Je bent helemaal bij. Er zijn geen uren om te accorderen.</td></tr>`;
+        tbody.innerHTML = `<tr class="no-results"><td colspan="5">Je bent helemaal bij. Er zijn geen uren om te accorderen.</td></tr>`;
       } else {
-        tbody.innerHTML = `<tr class="no-results"><td colspan="7">Geen urenregels gevonden.</td></tr>`;
+        tbody.innerHTML = `<tr class="no-results"><td colspan="5">Geen urenregels gevonden.</td></tr>`;
       }
       return;
     }
@@ -712,8 +710,6 @@
         <td>${row.date}</td>
         <td>${row.employeeName}</td>
         <td>${row.project}</td>
-        <td>${row.workType}</td>
-        <td class="wrap-cell">${row.description}</td>
         <td>${row.hours}</td>
       </tr>
     `;
