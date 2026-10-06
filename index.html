@@ -367,7 +367,14 @@
     <label for="monthPicker">Selecteer Periode (Maand):</label>
     <input type="month" id="monthPicker" onchange="onMonthFilterChange()">
 
-    <span id="weekFilterWrap">
+    <span id="projectFilterWrap" style="display:none;">
+      <label for="projectFilter">Project:</label>
+      <select id="projectFilter" onchange="onProjectFilterChange()">
+        <option value="">Alle projecten</option>
+      </select>
+    </span>
+
+    <span id="weekFilterWrap" style="display:none;">
       <label for="weekFilter">Week:</label>
       <select id="weekFilter" onchange="onWeekFilterChange()">
         <option value="">Alle weken</option>
@@ -462,6 +469,7 @@
   let frequency = 'maand'; // 'week' of 'maand', bepaalt welke filter zichtbaar is
   let searchTerm = "";
   let selectedWeek = "";   // ISO week-key, bv. "2015-W49", leeg = alle weken
+  let selectedProject = ""; // projectcode, leeg = alle projecten
   let selectedMonth = "";  // "YYYY-MM", client-side filter (geen nieuwe serveraanroep)
   let sortColumn = "date";
   let sortDir = "asc";
@@ -535,10 +543,8 @@
 
       frequency = data.frequency || 'maand';
       sessionToken = data.sessionToken || null;
-      document.getElementById("weekFilterWrap").style.display = (frequency === 'maand') ? 'none' : '';
-      if (frequency === 'maand') {
-        selectedWeek = "";
-      }
+      selectedWeek = "";
+      selectedProject = "";
 
       allRows = [];
       employeesData.forEach(emp => {
@@ -550,6 +556,8 @@
             employeeName: emp.employeeName,
             employeeId: emp.employeeId,
             project: rule.project,
+            projectCode: rule.projectCode || rule.project || '',
+            frequency: rule.frequency || frequency || 'maand',
             workType: rule.itemCode || '',
             description: rule.description,
             hours: rule.hours
@@ -559,6 +567,7 @@
 
       rowActions = {};
       currentPage = 1;
+      populateProjectFilter();
       populateWeekFilter();
       renderAll();
     } catch (err) {
@@ -595,7 +604,7 @@
   function populateWeekFilter() {
     const weekSelect = document.getElementById("weekFilter");
     const weeksMap = new Map();
-    allRows.filter(rowMatchesSelectedMonth).forEach(row => {
+    allRows.filter(r => rowMatchesSelectedMonth(r) && rowMatchesSelectedProject(r) && r.frequency === 'week').forEach(row => {
       const info = getISOWeekInfo(row.date);
       if (info) weeksMap.set(info.key, info);
     });
@@ -605,6 +614,31 @@
     weekSelect.innerHTML = '<option value="">Alle weken</option>' +
       weeks.map(w => `<option value="${w.key}">Week ${w.week} (${w.year})</option>`).join('');
     weekSelect.value = "";
+    document.getElementById("weekFilterWrap").style.display = weeks.length ? '' : 'none';
+  }
+
+  function populateProjectFilter() {
+    const sel = document.getElementById("projectFilter");
+    const map = new Map();
+    allRows.forEach(r => { if (r.projectCode) map.set(r.projectCode, r.project || r.projectCode); });
+    const items = Array.from(map.entries()).sort((a, b) => String(a[1]).localeCompare(String(b[1])));
+    selectedProject = "";
+    sel.innerHTML = '<option value="">Alle projecten</option>' +
+      items.map(([c, n]) => `<option value="${String(c).replace(/"/g, '&quot;')}">${String(n).replace(/</g, '&lt;')}</option>`).join('');
+    sel.value = "";
+    document.getElementById("projectFilterWrap").style.display = items.length > 1 ? '' : 'none';
+  }
+
+  function onProjectFilterChange() {
+    selectedProject = document.getElementById("projectFilter").value;
+    selectedWeek = "";
+    currentPage = 1;
+    populateWeekFilter();
+    renderAll();
+  }
+
+  function rowMatchesSelectedProject(row) {
+    return !selectedProject || row.projectCode === selectedProject;
   }
 
   function onMonthFilterChange() {
@@ -628,10 +662,11 @@
 
   function getFilteredSortedRows() {
     const term = searchTerm.trim().toLowerCase();
-    let rows = allRows.filter(rowMatchesSelectedMonth);
+    let rows = allRows.filter(r => rowMatchesSelectedMonth(r) && rowMatchesSelectedProject(r));
 
     if (selectedWeek) {
       rows = rows.filter(row => {
+        if (row.frequency !== 'week') return true;
         const info = getISOWeekInfo(row.date);
         return info && info.key === selectedWeek;
       });
