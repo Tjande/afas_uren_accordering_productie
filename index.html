@@ -430,14 +430,14 @@
 
   // --- Eigen meldingen, i.p.v. de kale browser alert()/confirm() ---
   let toastTimer = null;
-  function showToast(message, type) {
+  function showToast(message, type, duration) {
     const el = document.getElementById("toast");
     el.textContent = message;
     el.className = "toast visible" + (type ? ` toast-${type}` : "");
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => {
       el.classList.remove("visible");
-    }, 4000);
+    }, duration || 4000);
   }
 
   function showConfirm(message) {
@@ -465,6 +465,9 @@
 
   let allRows = [];        // platte lijst van alle open urenregels (over alle medewerkers)
   let rowActions = {};     // ruleId -> { action: 'approve'|'reject'|null, reason: '' }
+  const SESSION_MAX_MS = 55 * 60 * 1000; // token is 1 uur geldig; we waarschuwen iets eerder
+  const SESSION_EXPIRED_MSG = 'Je sessie is verlopen. Open deze pagina opnieuw via OutSite en maak je keuzes opnieuw. Er is niets verwerkt.';
+  let sessionLoadedAt = 0;
   let sessionToken = null; // sessietoken van n8n, nodig bij het accorderen
   let frequency = 'maand'; // 'week' of 'maand', bepaalt welke filter zichtbaar is
   let searchTerm = "";
@@ -543,6 +546,7 @@
 
       frequency = data.frequency || 'maand';
       sessionToken = data.sessionToken || null;
+      sessionLoadedAt = Date.now();
       selectedWeek = "";
       selectedProject = "";
 
@@ -899,6 +903,11 @@
       if (!doorgaan) return;
     }
 
+    if (sessionLoadedAt && Date.now() - sessionLoadedAt > SESSION_MAX_MS) {
+      showToast(SESSION_EXPIRED_MSG, 'error', 12000);
+      return;
+    }
+
     if (!sessionToken) {
       showToast('Geen geldig sessietoken \u2014 herlaad de pagina en probeer opnieuw.', 'error');
       return;
@@ -939,6 +948,8 @@
         showToast(data.message, (data.success === false || data.failed > 0) ? 'error' : 'success');
       } else if (res.ok) {
         showToast('Verwerkt.', 'success');
+      } else if (sessionLoadedAt && Date.now() - sessionLoadedAt > SESSION_MAX_MS - 5 * 60 * 1000) {
+        showToast(SESSION_EXPIRED_MSG, 'error', 12000);
       } else {
         showToast('Er ging iets mis bij het verwerken, probeer het opnieuw.', 'error');
       }
